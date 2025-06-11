@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Data Alat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Monitoring Data Alat Real-time</h1>
+        <div id="data-display">
+            <p>Memuat data...</p>
+        </div>
+
+        <button id="download-button">Download Semua Data (.csv)</button>
+
+        <hr>
+        <h2>Data Historis</h2>
+        <div id="historical-data-container">
+            <p>Memuat data historis...</p>
+            <table id="historical-table">
+                <thead>
+                    <tr>
+                        <th>ID Dokumen</th>
+                        <th>Suhu</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>
