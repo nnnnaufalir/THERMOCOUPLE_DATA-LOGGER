@@ -157,12 +157,27 @@ File ini mengonfigurasi proyek PlatformIO. Untuk detail lengkap, lihat file `pla
 platform = espressif32@5.3.0
 board = esp32dev
 framework = arduino
-; ... library dependencies, build flags, etc. ...
-Kredensial Firebase & WiFi (src/secrets.h)
-Anda harus membuat file bernama secrets.h di dalam folder src/ (jika belum ada) dan mengisi kredensial yang Anda dapatkan dari langkah-langkah di atas. Jangan pernah mengunggah file ini ke repositori publik!
+build_flags =
+	-DCORE_DEBUG_LEVEL=ARDUINO_DEBUG_INFO
+	-DENABLE_USER_AUTH        ; Aktifkan UserAuth
+    -DENABLE_FIRESTORE        ; Aktifkan modul Firestore
+upload_speed = 921600
+monitor_speed = 115200
+board_build.f_cpu = 240000000L
+board_build.f_flash = 80000000L
+lib_deps =
+	arduino-libraries/NTPClient@^3.2.1
+	adafruit/MAX6675 library@^1.1.2
+	marcoschwartz/LiquidCrystal_I2C@^1.1.4
+	mobizt/Firebase Arduino Client Library for ESP8266 and ESP32@^4.4.17
+```
 
-C++
+### `Kredensial Firebase & WiFi (src/secrets.h)`
 
+Anda harus membuat file bernama `secrets.h` di dalam folder `src/`
+`C++`
+
+```C++
 // Lihat file src/secrets.h untuk detail lengkap.
 #ifndef SECRETS_H
 #define SECRETS_H
@@ -177,21 +192,27 @@ C++
 #define USER_PASSWORD "your_password"
 
 #endif // SECRETS_H
-Struktur Database Firestore
-Data suhu akan disimpan dalam koleksi bernama suhuData. Setiap dokumen akan memiliki ID unik berdasarkan Timestamp Epoch (Unix Time) dan berisi field timestamp (String, ISO8601) dan suhu (Number/Float).
+```
+
+### `Struktur Database Firestore`
+
+Data suhu akan disimpan dalam koleksi bernama `suhuData`. Setiap dokumen akan memiliki ID unik berdasarkan `Timestamp Epoch (Unix Time)` dan berisi field `timestamp` (String, ISO8601) dan `suhu` (Number/Float).
 
 Contoh Dokumen:
+`JSON`
 
-JSON
-
+```json
 // Collection: suhuData
 // Document ID: 1749448049 (Epoch Time)
 {
   "timestamp": "2025-06-09T05:47:29",
   "suhu": 28.75
 }
-Cara Penggunaan (Deployment)
-Lakukan Pengkabelan (Wiring): Hubungkan semua komponen hardware ke ESP32 sesuai diagram pengkabelan yang disediakan di atas.
+```
+
+### Cara Penggunaan (Deployment)
+
+-Lakukan Pengkabelan (Wiring): Hubungkan semua komponen hardware ke ESP32 sesuai diagram pengkabelan yang disediakan di atas.
 Siapkan Firmware:
 Buka proyek di PlatformIO IDE.
 Pastikan src/secrets.h terisi.
@@ -221,4 +242,3 @@ Periksa kembali pengkabelan pin MAX6675 (SCK, CS, MISO).
 Pastikan termokopel terpasang dengan benar ke modul MAX6675.
 Lisensi (Opsional)
 Jika Anda ingin memberikan lisensi untuk proyek Anda, seperti MIT, GPL, dll., tambahkan di sini.
-```
