@@ -52,19 +52,26 @@ _Anda dapat menambahkan gambar atau deskripsi teks singkat tentang bagaimana set
 Struktur folder proyek ini adalah sebagai berikut:
 
 ```
-├── .pio/ # Folder internal PlatformIO
-├── .vscode/ # Konfigurasi VS Code
-├── include/
-├── lib/
+├── .firebase/          # Folder konfigurasi internal Firebase CLI (terkait Firebase Hosting)
+├── .pio/               # Folder internal PlatformIO untuk build environment
+├── .vscode/            # Konfigurasi Visual Studio Code
+├── include/            # Berisi header file kustom (jika ada)
+├── lib/                # Berisi library kustom (jika ada)
+├── public/             # Folder untuk aplikasi web monitoring data (Firebase Hosting)
+│   ├── 404.html        # Halaman error 404 untuk web
+│   ├── index.html      # Halaman utama aplikasi web
+│   ├── README.md       # Dokumentasi spesifik untuk aplikasi web
+│   ├── script.js       # Kode JavaScript untuk fungsionalitas web
+│   └── style.css       # Kode CSS untuk styling web
 ├── src/
-│ ├── main.cpp # Kode firmware utama ESP32
-│ └── secrets.h # File untuk kredensial WiFi & Firebase
-├── website/ # Folder untuk aplikasi web monitoring data
-│ └── index.html
-  └── script.js
-  └── style.css
-├── .gitignore
-└── platformio.ini # Konfigurasi proyek PlatformIO
+│   ├── main.cpp        # Kode firmware utama ESP32
+│   └── secrets.h       # File untuk kredensial WiFi & Firebase
+├── test/               # Folder untuk unit testing (jika ada)
+├── .firebaserc         # File konfigurasi Firebase CLI untuk project alias
+├── .gitignore          # File untuk mengabaikan file/folder tertentu dari version control (Git)
+├── firebase.json       # Konfigurasi utama Firebase
+└── platformio.ini      # Konfigurasi proyek PlatformIO
+└── README.md           # Dokumentasi utama proyek ini
 ```
 
 ## Persiapan Lingkungan Pengembangan
