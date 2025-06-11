@@ -50,6 +50,7 @@ _Anda dapat menambahkan gambar atau deskripsi teks singkat tentang bagaimana set
 ## Struktur Proyek
 
 Struktur folder proyek ini adalah sebagai berikut:
+
 THERMOCOUPLE.../
 ├── .pio/ # Folder internal PlatformIO
 ├── .vscode/ # Konfigurasi VS Code
@@ -63,3 +64,161 @@ THERMOCOUPLE.../
 │ └── (file-file web seperti index.html, script.js, style.css, dll.)
 ├── .gitignore # File untuk mengabaikan file/folder tertentu dari version control (Git)
 └── platformio.ini # Konfigurasi proyek PlatformIO
+
+## Persiapan Lingkungan Pengembangan
+
+### 1. Instalasi Visual Studio Code (VS Code)
+
+Jika Anda belum memiliki VS Code, unduh dan instal dari situs resminya: [https://code.visualstudio.com/](https://code.visualstudio.com/)
+
+### 2. Instalasi Ekstensi PlatformIO IDE
+
+PlatformIO IDE adalah ekstensi powerful untuk VS Code yang mendukung pengembangan embedded.
+
+- Buka VS Code.
+- Pergi ke Extensions view (`Ctrl+Shift+X` atau klik ikon Extensions di sidebar kiri).
+- Cari "PlatformIO IDE".
+- Klik "Install". Ikuti petunjuk instalasi yang mungkin muncul.
+
+### 3. Mengimpor Proyek ini ke PlatformIO
+
+Setelah PlatformIO IDE terinstal:
+
+- Buka VS Code.
+- Dari welcome screen PlatformIO Home (jika tidak muncul, klik ikon alien PlatformIO di sidebar kiri, lalu klik "Home"), pilih **"Open Project"**.
+- Navigasikan ke folder root proyek ini (`THERMOCOUPLE.../`).
+- Pilih folder tersebut dan klik "Open". PlatformIO akan secara otomatis mendeteksi proyek ini sebagai proyek PlatformIO.
+
+## Penyiapan Google Firebase
+
+Proyek ini mengandalkan Google Firebase untuk penyimpanan data cloud. Anda perlu menyiapkan proyek Firebase sendiri untuk mendapatkan kredensial yang dibutuhkan.
+
+### 1. Membuat Proyek Firebase Baru
+
+- Buka [Firebase Console](https://console.firebase.google.com/).
+- Klik "Add project" atau "Buat proyek".
+- Ikuti langkah-langkah untuk membuat proyek baru.
+
+### 2. Mengaktifkan Cloud Firestore Database
+
+- Dari Firebase Console, navigasikan ke menu samping kiri dan pilih **"Build" > "Firestore Database"**.
+- Klik "Create database". Pilih **"Start in production mode"**.
+- Pilih lokasi server Firestore Anda (misal: `asia-southeast1`).
+- Klik "Enable".
+
+### 3. Membuat Akun Pengguna Khusus untuk ESP32
+
+- Dari Firebase Console, navigasikan ke menu samping kiri dan pilih **"Build" > "Authentication"**.
+- Klik "Get started".
+- Pergi ke tab **"Sign-in method"**. Aktifkan provider **"Email/Password"**.
+- Pergi ke tab **"Users"**. Klik "Add user".
+- Masukkan email dan password baru yang akan digunakan oleh ESP32 (misal: `esp32.logger@yourdomain.com`).
+- Klik "Add user".
+
+### 4. Mengambil Kredensial Firebase (API Key & Project ID)
+
+Kredensial ini akan digunakan di file `src/secrets.h`.
+
+- Dari Firebase Console, klik ikon **"Project settings"** (roda gigi) di sidebar kiri atas.
+- Di tab **"General"**, temukan **"Project ID"**. Ini adalah `PROJECT_ID`.
+- Gulir ke bawah ke bagian **"Your apps"**. Jika belum ada aplikasi web, klik **"Add app"** > ikon **"Web" ($\text{</>}$)**.
+- Setelah aplikasi terdaftar, cari **`apiKey`** dalam konfigurasi. Ini adalah `API_KEY`.
+
+### 5. Mengatur Aturan Keamanan Firestore (Firestore Security Rules)
+
+Ini adalah langkah **paling krusial** untuk memastikan ESP32 dapat menulis data.
+
+- Dari Firebase Console, navigasikan ke menu samping kiri dan pilih **"Build" > "Firestore Database"**.
+- Pergi ke tab **"Rules"**.
+- Ganti aturan default dengan yang mengizinkan pengguna terautentikasi untuk menulis ke koleksi `suhuData`:
+
+  ```firestore
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /suhuData/{docId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+  ```
+
+- Klik "Publish" atau "Publikasikan".
+
+## Konfigurasi Software (PlatformIO)
+
+### `platformio.ini`
+
+File ini mengonfigurasi proyek PlatformIO. Untuk detail lengkap, lihat file `platformio.ini` di root proyek.
+
+```ini
+; Lihat file platformio.ini di root proyek untuk detail lengkap.
+[env:esp32dev]
+platform = espressif32@5.3.0
+board = esp32dev
+framework = arduino
+; ... library dependencies, build flags, etc. ...
+Kredensial Firebase & WiFi (src/secrets.h)
+Anda harus membuat file bernama secrets.h di dalam folder src/ (jika belum ada) dan mengisi kredensial yang Anda dapatkan dari langkah-langkah di atas. Jangan pernah mengunggah file ini ke repositori publik!
+
+C++
+
+// Lihat file src/secrets.h untuk detail lengkap.
+#ifndef SECRETS_H
+#define SECRETS_H
+
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#define WIFI_HOSTNAME "esp32-temp-logger"
+
+#define API_KEY "YOUR_FIREBASE_API_KEY"
+#define PROJECT_ID "YOUR_FIREBASE_PROJECT_ID"
+#define USER_EMAIL "esp32.logger@example.com"
+#define USER_PASSWORD "your_password"
+
+#endif // SECRETS_H
+Struktur Database Firestore
+Data suhu akan disimpan dalam koleksi bernama suhuData. Setiap dokumen akan memiliki ID unik berdasarkan Timestamp Epoch (Unix Time) dan berisi field timestamp (String, ISO8601) dan suhu (Number/Float).
+
+Contoh Dokumen:
+
+JSON
+
+// Collection: suhuData
+// Document ID: 1749448049 (Epoch Time)
+{
+  "timestamp": "2025-06-09T05:47:29",
+  "suhu": 28.75
+}
+Cara Penggunaan (Deployment)
+Lakukan Pengkabelan (Wiring): Hubungkan semua komponen hardware ke ESP32 sesuai diagram pengkabelan yang disediakan di atas.
+Siapkan Firmware:
+Buka proyek di PlatformIO IDE.
+Pastikan src/secrets.h terisi.
+Pastikan alamat I2C LCD di src/main.cpp benar (umumnya 0x27).
+Klik ikon "Build" (tanda centang) di PlatformIO Toolbar.
+Klik ikon "Upload" (tanda panah kanan) untuk mengunggah firmware ke ESP32.
+Monitor Operasi:
+Buka Serial Monitor (115200 baud) di PlatformIO.
+Perhatikan LCD pada perangkat Anda untuk status.
+Buka konsol Firebase Anda (https://console.firebase.google.com/) > Firestore Database untuk melihat data yang masuk.
+Folder website/ (Web Monitoring & Data Download)
+Folder website/ berisi kode untuk antarmuka web sederhana yang memungkinkan Anda melihat data secara real-time dan mengunduh data historis dalam format CSV.
+
+Untuk detail penggunaan aplikasi web, silakan lihat website/README.md yang terpisah (jika ada) atau instruksi spesifik cara menjalankan aplikasi web Anda.
+
+Pemecahan Masalah (Troubleshooting)
+"SSL Write Error" atau Koneksi Firebase Gagal:
+Pastikan waktu ESP32 tersinkronisasi dengan NTP.
+Periksa kembali kredensial di src/secrets.h.
+Pastikan aturan keamanan Firestore di konsol Firebase mengizinkan penulisan.
+LCD tidak menampilkan apa-apa:
+Periksa pengkabelan SDA/SCL.
+Coba alamat I2C LCD lain (misal 0x3F atau 0x27).
+Pastikan potensiometer di belakang modul I2C LCD diatur untuk kontras.
+Pembacaan Suhu nan atau tidak valid:
+Periksa kembali pengkabelan pin MAX6675 (SCK, CS, MISO).
+Pastikan termokopel terpasang dengan benar ke modul MAX6675.
+Lisensi (Opsional)
+Jika Anda ingin memberikan lisensi untuk proyek Anda, seperti MIT, GPL, dll., tambahkan di sini.
+```
