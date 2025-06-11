@@ -4,15 +4,14 @@ import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/fir
 import { getFirestore, collection, orderBy, limit, onSnapshot, query, getDocs } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
 // --- Konfigurasi Firebase Anda ---
-// GANTI NILAI-NILAI INI DENGAN KONFIGURASI SPESIFIK PROYEK FIREBASE ANDA
 const firebaseConfig = {
-  apiKey: "AIzaSyDoMs31m2Ynn7YVGYzrSYam4zTFDSeXfrM", // GANTI INI
-  authDomain: "ujicoba-datalogger.firebaseapp.com", // GANTI INI
-  databaseURL: "https://ujicoba-datalogger-default-rtdb.asia-southeast1.firebasedatabase.app", // Untuk Realtime DB, bisa diabaikan jika hanya pakai Firestore
-  projectId: "ujicoba-datalogger", // GANTI INI
-  storageBucket: "ujicoba-datalogger.firebasestorage.app", // GANTI INI
-  messagingSenderId: "794133848944", // GANTI INI
-  appId: "1:794133848944:web:b71a2e078fd823e00965b5", // GANTI INI
+  apiKey: "AIzaSyDoMs31m2Ynn7YVGYzrSYam4zTFDSeXfrM",
+  authDomain: "ujicoba-datalogger.firebaseapp.com",
+  databaseURL: "https://ujicoba-datalogger-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ujicoba-datalogger",
+  storageBucket: "ujicoba-datalogger.firebasestorage.app",
+  messagingSenderId: "794133848944",
+  appId: "1:794133848944:web:b71a2e078fd823e00965b5",
 };
 
 // --- Inisialisasi Firebase ---
@@ -27,22 +26,60 @@ const dataDisplay = document.getElementById("data-display");
 const downloadButton = document.getElementById("download-button");
 const historicalTableBody = document.querySelector("#historical-table tbody");
 const historicalDataContainer = document.getElementById("historical-data-container");
-const historicalDataMessage = historicalDataContainer.querySelector("p"); // Referensi ke paragraf pesan
+
+// Pesan loading dan spinner
+const realtimeLoadingMessage = document.getElementById("realtime-loading-message");
+const historicalLoadingMessage = document.getElementById("historical-loading-message");
+const chartLoadingMessage = document.getElementById("chart-loading-message"); // NEW
+const realtimeSpinner = document.getElementById("realtime-spinner");
+const historicalSpinner = document.getElementById("historical-spinner");
+const downloadSpinner = document.getElementById("download-spinner");
+const chartSpinner = document.getElementById("chart-spinner"); // NEW
 
 // --- Konfigurasi Aplikasi ---
-// Nama koleksi Firestore tempat data alat Anda berada
 const collectionName = "suhuData";
-
-// Kredensial untuk akun monitoring yang sudah Anda buat
 const monitorEmail = "monitor@gmail.com";
 const monitorPassword = "admin321";
 
-// --- Proses Autentikasi ---
+// Variabel global untuk menyimpan instance chart
+let temperatureChart = null; // NEW
+
+// --- Fungsi Helper untuk Mengelola Spinner dan Pesan (SAMA SEPERTI SEBELUMNYA) ---
+function showLoadingState(messageElement, spinnerElement, text = "Memuat...") {
+  messageElement.textContent = text;
+  messageElement.classList.remove("hidden");
+  spinnerElement.classList.remove("hidden");
+  spinnerElement.style.display = "block";
+}
+
+function hideLoadingState(messageElement, spinnerElement) {
+  messageElement.classList.add("hidden");
+  spinnerElement.classList.add("hidden");
+  spinnerElement.style.display = "none";
+}
+
+function showErrorMessage(messageElement, spinnerElement, message) {
+  messageElement.textContent = message;
+  messageElement.style.color = "red";
+  messageElement.classList.remove("hidden");
+  spinnerElement.classList.add("hidden");
+  spinnerElement.style.display = "none";
+}
+
+function showEmptyMessage(messageElement, spinnerElement, message) {
+  messageElement.textContent = message;
+  messageElement.style.color = "#777";
+  messageElement.classList.remove("hidden");
+  spinnerElement.classList.add("hidden");
+  spinnerElement.style.display = "none";
+}
+
+// --- Proses Autentikasi (SAMA SEPERTI SEBELUMNYA, kecuali pemanggilan loadHistoricalData) ---
 signInWithEmailAndPassword(auth, monitorEmail, monitorPassword)
   .then((userCredential) => {
-    // Berhasil login
     console.log("Berhasil login sebagai:", userCredential.user.email);
-    dataDisplay.innerHTML = "<p>Login berhasil. Memuat data...</p>";
+
+    showLoadingState(realtimeLoadingMessage, realtimeSpinner, "Login berhasil. Memuat data terbaru...");
 
     // --- Aktifkan Monitoring Real-time ---
     const qRealtime = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(1));
@@ -50,11 +87,14 @@ signInWithEmailAndPassword(auth, monitorEmail, monitorPassword)
     onSnapshot(
       qRealtime,
       (snapshot) => {
-        dataDisplay.innerHTML = "";
+        hideLoadingState(realtimeLoadingMessage, realtimeSpinner);
+
         if (snapshot.empty) {
           dataDisplay.innerHTML = "<p>Tidak ada data ditemukan.</p>";
           return;
         }
+
+        dataDisplay.innerHTML = "";
         snapshot.forEach((doc) => {
           const data = doc.data();
           let dataHtml = `<h2>Data Terbaru (${doc.id}):</h2>`;
@@ -62,8 +102,6 @@ signInWithEmailAndPassword(auth, monitorEmail, monitorPassword)
           for (const key in data) {
             if (Object.hasOwnProperty.call(data, key)) {
               let value = data[key];
-              // Untuk tampilan real-time, biarkan timestamp dalam format aslinya
-              // atau Anda bisa tambahkan pemformatan jika diperlukan di sini juga
               if (typeof value === "object" && value !== null) {
                 try {
                   value = JSON.stringify(value, null, 2);
@@ -80,7 +118,8 @@ signInWithEmailAndPassword(auth, monitorEmail, monitorPassword)
       },
       (error) => {
         console.error("Error saat mendapatkan dokumen real-time: ", error);
-        dataDisplay.innerHTML = `<p style="color: red;">Error memuat data real-time: ${error.message}</p>`;
+        showErrorMessage(realtimeLoadingMessage, realtimeSpinner, `Error memuat data real-time: ${error.message}`);
+        dataDisplay.innerHTML = "";
       }
     );
 
@@ -88,45 +127,46 @@ signInWithEmailAndPassword(auth, monitorEmail, monitorPassword)
     downloadButton.disabled = false;
     downloadButton.textContent = "Download Semua Data (.csv)";
 
-    // --- Panggil fungsi untuk memuat data historis setelah login berhasil ---
+    // --- Panggil fungsi untuk memuat data historis & grafik setelah login berhasil ---
     loadHistoricalData();
+    loadTemperatureChart(); // Panggil fungsi load grafik setelah login berhasil
   })
   .catch((error) => {
     const errorCode = error.code;
     const errorMessage = error.message;
     console.error("Login gagal:", errorCode, errorMessage);
-    dataDisplay.innerHTML = `<p style="color: red;">Gagal login ke Firebase. Pastikan kredensial benar, metode masuk Email/Password diaktifkan di konsol Firebase, dan ada koneksi internet. (${errorMessage})</p>`;
+
+    showErrorMessage(realtimeLoadingMessage, realtimeSpinner, `Gagal login ke Firebase: ${errorMessage}`);
+    dataDisplay.innerHTML = "";
+
     downloadButton.disabled = true;
     downloadButton.textContent = "Login Gagal, Tidak Bisa Download";
-    historicalDataMessage.textContent = "Login gagal, tidak bisa memuat data historis.";
-    historicalDataMessage.style.color = "red";
-    historicalDataMessage.style.display = "block";
+
+    showErrorMessage(historicalLoadingMessage, historicalSpinner, `Login gagal, tidak bisa memuat data historis.`);
+    historicalTableBody.innerHTML = "";
+    showErrorMessage(chartLoadingMessage, chartSpinner, `Login gagal, tidak bisa memuat grafik.`); // NEW
   });
 
-// --- Fungsi untuk Mengunduh Data ke CSV ---
+// --- Fungsi untuk Mengunduh Data ke CSV (SAMA SEPERTI SEBELUMNYA) ---
 async function downloadDataAsCsv() {
   downloadButton.disabled = true;
   downloadButton.textContent = "Sedang Mengunduh...";
+  downloadSpinner.classList.remove("hidden");
+  downloadSpinner.style.display = "block";
 
   try {
-    const qAllData = query(
-      collection(db, collectionName),
-      orderBy("timestamp", "asc") // Urutkan ascending agar kronologis di CSV
-    );
+    const qAllData = query(collection(db, collectionName), orderBy("timestamp", "asc"));
 
     const querySnapshot = await getDocs(qAllData);
 
     if (querySnapshot.empty) {
       alert("Tidak ada data untuk diunduh!");
-      downloadButton.disabled = false;
-      downloadButton.textContent = "Download Semua Data (.csv)";
       return;
     }
 
     let csvContent = "";
     const headerArray = ["documentId", "suhu", "timestamp"];
 
-    // Tambahkan header ke CSV, menggunakan titik koma sebagai pemisah
     csvContent += headerArray.map((h) => `"${h.replace(/"/g, '""')}"`).join(";") + "\n";
 
     querySnapshot.forEach((doc) => {
@@ -137,13 +177,10 @@ async function downloadDataAsCsv() {
           if (header === "documentId") {
             value = doc.id;
           } else if (data[header] !== undefined) {
-            // Khusus untuk timestamp, kita format juga di CSV
             if (header === "timestamp" && typeof data[header] === "string") {
               try {
-                const dateObj = new Date(data[header]); // Parsing string ISO 8601
+                const dateObj = new Date(data[header]);
                 if (!isNaN(dateObj.getTime())) {
-                  // Cek validitas tanggal
-                  // Format untuk CSV sama dengan tampilan tabel
                   value = dateObj.toLocaleString("id-ID", {
                     year: "numeric",
                     month: "2-digit",
@@ -154,10 +191,10 @@ async function downloadDataAsCsv() {
                     hour12: false,
                   });
                 } else {
-                  value = data[header]; // Gunakan string asli jika invalid
+                  value = data[header];
                 }
               } catch (e) {
-                value = data[header]; // Fallback jika error parsing
+                value = data[header];
               }
             } else {
               value = data[header];
@@ -208,54 +245,44 @@ async function downloadDataAsCsv() {
   } finally {
     downloadButton.disabled = false;
     downloadButton.textContent = "Download Semua Data (.csv)";
+    downloadSpinner.classList.add("hidden");
+    downloadSpinner.style.display = "none";
   }
 }
 
-// --- Fungsi Memuat Data Historis ke Tabel ---
+// --- Fungsi Memuat Data Historis ke Tabel (SAMA SEPERTI SEBELUMNYA) ---
 async function loadHistoricalData() {
-  historicalTableBody.innerHTML = ""; // Bersihkan semua baris data yang ada di tbody
-  historicalDataMessage.textContent = "Memuat data historis..."; // Tampilkan pesan loading
-  historicalDataMessage.style.color = "#777"; // Reset warna pesan
-  historicalDataMessage.style.display = "block"; // Pastikan pesan loading terlihat
+  historicalTableBody.innerHTML = "";
+  showLoadingState(historicalLoadingMessage, historicalSpinner, "Memuat data historis...");
 
   try {
-    const qHistoricalData = query(
-      collection(db, collectionName),
-      orderBy("timestamp", "desc") // Urutkan dari terbaru ke terlama untuk tampilan tabel
-      // Tambahkan .limit(jumlah_data) di sini jika ingin membatasi jumlah baris di tabel
-    );
+    const qHistoricalData = query(collection(db, collectionName), orderBy("timestamp", "desc"));
 
     const querySnapshot = await getDocs(qHistoricalData);
 
     if (querySnapshot.empty) {
-      historicalDataMessage.textContent = "Tidak ada data historis ditemukan.";
-      historicalTableBody.innerHTML = ""; // Pastikan tbody kosong
-      historicalDataMessage.style.display = "block";
+      showEmptyMessage(historicalLoadingMessage, historicalSpinner, "Tidak ada data historis ditemukan.");
+      historicalTableBody.innerHTML = "";
       return;
     }
 
-    historicalDataMessage.style.display = "none"; // Sembunyikan pesan loading setelah data ada
+    hideLoadingState(historicalLoadingMessage, historicalSpinner);
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       const row = historicalTableBody.insertRow();
 
-      // Kolom ID Dokumen
       const cellId = row.insertCell();
       cellId.textContent = doc.id;
 
-      // Kolom Suhu
       const cellSuhu = row.insertCell();
-      // Coba parsing ke float untuk memastikan angka, dan format ke 2 angka di belakang koma
       cellSuhu.textContent = data.suhu !== undefined ? parseFloat(data.suhu).toFixed(2) : "-";
 
-      // Kolom Timestamp
       const cellTimestamp = row.insertCell();
       if (data.timestamp !== undefined && typeof data.timestamp === "string") {
         try {
-          const dateObj = new Date(data.timestamp); // Parsing string ISO 8601
+          const dateObj = new Date(data.timestamp);
           if (!isNaN(dateObj.getTime())) {
-            // Cek apakah tanggal valid
             cellTimestamp.textContent = dateObj.toLocaleString("id-ID", {
               year: "numeric",
               month: "2-digit",
@@ -263,7 +290,7 @@ async function loadHistoricalData() {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
-              hour12: false, // Format 24 jam
+              hour12: false,
             });
           } else {
             cellTimestamp.textContent = `Invalid Date: ${data.timestamp}`;
@@ -280,9 +307,151 @@ async function loadHistoricalData() {
     });
   } catch (error) {
     console.error("Error saat memuat data historis:", error);
-    historicalDataMessage.textContent = `Error memuat data historis: ${error.message}`;
-    historicalDataMessage.style.color = "red";
-    historicalDataMessage.style.display = "block";
+    showErrorMessage(historicalLoadingMessage, historicalSpinner, `Error memuat data historis: ${error.message}`);
+  }
+}
+
+// --- Fungsi Baru: Memuat Grafik Suhu ---
+async function loadTemperatureChart() {
+  showLoadingState(chartLoadingMessage, chartSpinner, "Memuat grafik suhu...");
+
+  try {
+    const qChartData = query(
+      collection(db, collectionName),
+      orderBy("timestamp", "asc"), // Urutkan dari terlama ke terbaru untuk grafik
+      limit(100) // Batasi 100 data terakhir untuk grafik agar performa bagus
+    );
+
+    const querySnapshot = await getDocs(qChartData);
+
+    if (querySnapshot.empty) {
+      showEmptyMessage(chartLoadingMessage, chartSpinner, "Tidak ada data untuk grafik.");
+      // Hapus chart yang mungkin sudah ada
+      if (temperatureChart) {
+        temperatureChart.destroy();
+        temperatureChart = null;
+      }
+      return;
+    }
+
+    const labels = []; // Untuk timestamp
+    const dataPoints = []; // Untuk suhu
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.timestamp && data.suhu !== undefined) {
+        try {
+          const dateObj = new Date(data.timestamp);
+          if (!isNaN(dateObj.getTime())) {
+            // Format label untuk sumbu X grafik
+            labels.push(
+              dateObj.toLocaleString("id-ID", {
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            );
+            dataPoints.push(parseFloat(data.suhu));
+          }
+        } catch (e) {
+          console.warn("Skipping invalid timestamp for chart:", data.timestamp, e);
+        }
+      }
+    });
+
+    hideLoadingState(chartLoadingMessage, chartSpinner);
+
+    const ctx = document.getElementById("temperature-chart").getContext("2d");
+
+    // Jika sudah ada chart, hancurkan dulu
+    if (temperatureChart) {
+      temperatureChart.destroy();
+    }
+
+    temperatureChart = new Chart(ctx, {
+      type: "line", // Jenis grafik: garis
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Suhu (°C)",
+            data: dataPoints,
+            borderColor: "#3498db", // Warna garis
+            backgroundColor: "rgba(52, 152, 219, 0.2)", // Warna area di bawah garis
+            fill: true,
+            tension: 0.1, // Membuat garis sedikit melengkung
+            pointRadius: 3, // Ukuran titik data
+            pointBackgroundColor: "#3498db",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false, // Penting agar bisa mengatur ukuran canvas
+        plugins: {
+          legend: {
+            display: true,
+            position: "top",
+            labels: {
+              font: {
+                family: "Montserrat",
+              },
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y.toFixed(2) + " °C";
+                }
+                return label;
+              },
+            },
+            titleFont: { family: "Montserrat" },
+            bodyFont: { family: "Montserrat" },
+          },
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Waktu",
+              font: { family: "Montserrat", size: 14, weight: "600" },
+            },
+            ticks: {
+              font: { family: "Montserrat" },
+            },
+            grid: {
+              display: false, // Sembunyikan grid vertikal
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Suhu (°C)",
+              font: { family: "Montserrat", size: 14, weight: "600" },
+            },
+            ticks: {
+              font: { family: "Montserrat" },
+            },
+            beginAtZero: false, // Suhu bisa mulai dari nilai bukan 0
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error saat memuat grafik suhu:", error);
+    showErrorMessage(chartLoadingMessage, chartSpinner, `Error memuat grafik: ${error.message}`);
+    // Jika ada error, pastikan chart juga dihancurkan
+    if (temperatureChart) {
+      temperatureChart.destroy();
+      temperatureChart = null;
+    }
   }
 }
 
