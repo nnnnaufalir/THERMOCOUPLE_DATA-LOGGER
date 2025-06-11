@@ -226,9 +226,7 @@ Contoh Dokumen:
 
 ### Folder `website/` (Web Monitoring & Data Download)
 
-Folder `website/` berisi kode untuk antarmuka web sederhana yang memungkinkan Anda melihat data secara _real-time_ dan mengunduh data historis dalam format CSV.
-
-Untuk detail penggunaan aplikasi web, silakan lihat `website/README.md` yang terpisah (jika ada) atau instruksi spesifik cara menjalankan aplikasi web Anda.
+Untuk detail penggunaan aplikasi web, silakan lihat `website/README.md`
 
 ### Pemecahan Masalah (Troubleshooting)
 
