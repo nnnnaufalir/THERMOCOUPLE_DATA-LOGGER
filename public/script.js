@@ -10,7 +10,7 @@ const firebaseConfig = {
   projectId: "datalogger-thermocouple-k",
   storageBucket: "datalogger-thermocouple-k.firebasestorage.app",
   messagingSenderId: "1021046780893",
-  appId: "1:1021046780893:web:74b745995253ff302bbc34",
+  appId: "1:1021046780893:web:0f7b53d7d9d2d74f2bbc34",
 };
 
 // --- Inisialisasi Firebase ---
