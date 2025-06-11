@@ -5,13 +5,12 @@ import { getFirestore, collection, orderBy, limit, onSnapshot, query, getDocs } 
 
 // --- Konfigurasi Firebase Anda ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDoMs31m2Ynn7YVGYzrSYam4zTFDSeXfrM",
-  authDomain: "ujicoba-datalogger.firebaseapp.com",
-  databaseURL: "https://ujicoba-datalogger-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "ujicoba-datalogger",
-  storageBucket: "ujicoba-datalogger.firebasestorage.app",
-  messagingSenderId: "794133848944",
-  appId: "1:794133848944:web:b71a2e078fd823e00965b5",
+  apiKey: "AIzaSyC0Ie9Uen5q8XRofR8sC5QBdFHrKiEP2ps",
+  authDomain: "datalogger-thermocouple-k.firebaseapp.com",
+  projectId: "datalogger-thermocouple-k",
+  storageBucket: "datalogger-thermocouple-k.firebasestorage.app",
+  messagingSenderId: "1021046780893",
+  appId: "1:1021046780893:web:74b745995253ff302bbc34",
 };
 
 // --- Inisialisasi Firebase ---

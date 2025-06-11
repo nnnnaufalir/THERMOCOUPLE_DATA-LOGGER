@@ -13,8 +13,8 @@
 // JANGAN UBAH BAGIAN INI
 // ===================================
 // --- KONFIGURASI FIREBASE ---
-#define API_KEY "AIzaSyDoMs31m2Ynn7YVGYzrSYam4zTFDSeXfrM"
-#define PROJECT_ID "ujicoba-datalogger"
+#define API_KEY "AIzaSyC0Ie9Uen5q8XRofR8sC5QBdFHrKiEP2ps"
+#define PROJECT_ID "datalogger-thermocouple-k"
 #define USER_EMAIL "esp32.logger@gmail.com"
 #define USER_PASSWORD "admin123"
 
