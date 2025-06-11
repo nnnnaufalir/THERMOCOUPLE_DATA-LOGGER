@@ -2,7 +2,7 @@
 
 ## Deskripsi Proyek
 
-Proyek ini adalah implementasi Data Logger Suhu real-time menggunakan mikrokontroler **ESP32** dengan sensor **Termokopel Tipe K** (melalui modul MAX6675) dan tampilan **LCD 16x2 I2C**. Data suhu yang dikumpulkan akan secara berkala dikirim dan disimpan ke database **Google Firebase Firestore** melalui koneksi WiFi.
+Proyek ini adalah implementasi Data Logger Suhu real-time menggunakan mikrokontroler **ESP32** dengan sensor **Thermocouple Tipe K** (melalui modul MAX6675) dan tampilan **LCD 16x2 I2C**. Data suhu yang dikumpulkan akan secara berkala dikirim dan disimpan ke database **Google Firebase Firestore** melalui koneksi WiFi.
 
 Dilengkapi dengan sebuah **aplikasi web sederhana** untuk memantau data secara _real-time_ dan kemampuan untuk mengunduh seluruh data dalam format Excel.
 
@@ -51,19 +51,21 @@ _Anda dapat menambahkan gambar atau deskripsi teks singkat tentang bagaimana set
 
 Struktur folder proyek ini adalah sebagai berikut:
 
-THERMOCOUPLE.../
+```
 ├── .pio/ # Folder internal PlatformIO
 ├── .vscode/ # Konfigurasi VS Code
-├── include/ # Berisi header file kustom (jika ada)
-├── lib/ # Berisi library kustom (jika ada)
+├── include/
+├── lib/
 ├── src/
 │ ├── main.cpp # Kode firmware utama ESP32
-│ └── secrets.h # File untuk kredensial WiFi & Firebase (TIDAK BOLEH DISHARE!)
-├── test/ # Folder untuk unit testing (jika ada)
+│ └── secrets.h # File untuk kredensial WiFi & Firebase
 ├── website/ # Folder untuk aplikasi web monitoring data
-│ └── (file-file web seperti index.html, script.js, style.css, dll.)
-├── .gitignore # File untuk mengabaikan file/folder tertentu dari version control (Git)
+│ └── index.html
+  └── script.js
+  └── style.css
+├── .gitignore
 └── platformio.ini # Konfigurasi proyek PlatformIO
+```
 
 ## Persiapan Lingkungan Pengembangan
 
@@ -103,7 +105,7 @@ Proyek ini mengandalkan Google Firebase untuk penyimpanan data cloud. Anda perlu
 
 - Dari Firebase Console, navigasikan ke menu samping kiri dan pilih **"Build" > "Firestore Database"**.
 - Klik "Create database". Pilih **"Start in production mode"**.
-- Pilih lokasi server Firestore Anda (misal: `asia-southeast1`).
+- Pilih lokasi server Firestore Anda (`asia-southeast1`).
 - Klik "Enable".
 
 ### 3. Membuat Akun Pengguna Khusus untuk ESP32
@@ -112,7 +114,7 @@ Proyek ini mengandalkan Google Firebase untuk penyimpanan data cloud. Anda perlu
 - Klik "Get started".
 - Pergi ke tab **"Sign-in method"**. Aktifkan provider **"Email/Password"**.
 - Pergi ke tab **"Users"**. Klik "Add user".
-- Masukkan email dan password baru yang akan digunakan oleh ESP32 (misal: `esp32.logger@yourdomain.com`).
+- Masukkan email dan password baru yang akan digunakan oleh ESP32
 - Klik "Add user".
 
 ### 4. Mengambil Kredensial Firebase (API Key & Project ID)
@@ -202,8 +204,6 @@ Contoh Dokumen:
 `JSON`
 
 ```json
-// Collection: suhuData
-// Document ID: 1749448049 (Epoch Time)
 {
   "timestamp": "2025-06-09T05:47:29",
   "suhu": 28.75
@@ -212,33 +212,34 @@ Contoh Dokumen:
 
 ### Cara Penggunaan (Deployment)
 
--Lakukan Pengkabelan (Wiring): Hubungkan semua komponen hardware ke ESP32 sesuai diagram pengkabelan yang disediakan di atas.
-Siapkan Firmware:
-Buka proyek di PlatformIO IDE.
-Pastikan src/secrets.h terisi.
-Pastikan alamat I2C LCD di src/main.cpp benar (umumnya 0x27).
-Klik ikon "Build" (tanda centang) di PlatformIO Toolbar.
-Klik ikon "Upload" (tanda panah kanan) untuk mengunggah firmware ke ESP32.
-Monitor Operasi:
-Buka Serial Monitor (115200 baud) di PlatformIO.
-Perhatikan LCD pada perangkat Anda untuk status.
-Buka konsol Firebase Anda (https://console.firebase.google.com/) > Firestore Database untuk melihat data yang masuk.
-Folder website/ (Web Monitoring & Data Download)
-Folder website/ berisi kode untuk antarmuka web sederhana yang memungkinkan Anda melihat data secara real-time dan mengunduh data historis dalam format CSV.
+1.  **Lakukan Pengkabelan (Wiring)**: Hubungkan semua komponen hardware ke ESP32 sesuai diagram pengkabelan yang disediakan di atas.
+2.  **Siapkan Firmware**:
+    - Buka proyek di PlatformIO IDE.
+    - Pastikan `src/secrets.h` terisi.
+    - Pastikan alamat I2C LCD di `src/main.cpp` benar (umumnya `0x27`).
+    - Klik ikon "Build" (tanda centang) di PlatformIO Toolbar untuk mengkompilasi kode.
+    - Klik ikon "Upload" (tanda panah kanan) untuk mengunggah firmware ke ESP32. Pastikan ESP32 terhubung ke komputer melalui USB.
+3.  **Monitor Operasi**:
+    - Buka Serial Monitor (115200 baud) di PlatformIO.
+    - Perhatikan LCD pada perangkat Anda untuk status.
+    - Buka konsol Firebase Anda ([https://console.firebase.google.com/](https://console.firebase.google.com/)) > Firestore Database untuk melihat data yang masuk.
 
-Untuk detail penggunaan aplikasi web, silakan lihat website/README.md yang terpisah (jika ada) atau instruksi spesifik cara menjalankan aplikasi web Anda.
+### Folder `website/` (Web Monitoring & Data Download)
 
-Pemecahan Masalah (Troubleshooting)
-"SSL Write Error" atau Koneksi Firebase Gagal:
-Pastikan waktu ESP32 tersinkronisasi dengan NTP.
-Periksa kembali kredensial di src/secrets.h.
-Pastikan aturan keamanan Firestore di konsol Firebase mengizinkan penulisan.
-LCD tidak menampilkan apa-apa:
-Periksa pengkabelan SDA/SCL.
-Coba alamat I2C LCD lain (misal 0x3F atau 0x27).
-Pastikan potensiometer di belakang modul I2C LCD diatur untuk kontras.
-Pembacaan Suhu nan atau tidak valid:
-Periksa kembali pengkabelan pin MAX6675 (SCK, CS, MISO).
-Pastikan termokopel terpasang dengan benar ke modul MAX6675.
-Lisensi (Opsional)
-Jika Anda ingin memberikan lisensi untuk proyek Anda, seperti MIT, GPL, dll., tambahkan di sini.
+Folder `website/` berisi kode untuk antarmuka web sederhana yang memungkinkan Anda melihat data secara _real-time_ dan mengunduh data historis dalam format CSV.
+
+Untuk detail penggunaan aplikasi web, silakan lihat `website/README.md` yang terpisah (jika ada) atau instruksi spesifik cara menjalankan aplikasi web Anda.
+
+### Pemecahan Masalah (Troubleshooting)
+
+- **"SSL Write Error" atau Koneksi Firebase Gagal**:
+  - Pastikan waktu ESP32 tersinkronisasi dengan NTP.
+  - Periksa kembali kredensial di `src/secrets.h`.
+  - Pastikan aturan keamanan Firestore di konsol Firebase mengizinkan penulisan.
+- **LCD tidak menampilkan apa-apa**:
+  - Periksa pengkabelan SDA/SCL.
+  - Coba alamat I2C LCD lain (misal `0x3F` atau `0x27`).
+  - Pastikan potensiometer di belakang modul I2C LCD diatur untuk kontras.
+- **Pembacaan Suhu `nan` atau tidak valid**:
+  - Periksa kembali pengkabelan pin MAX6675 (SCK, CS, MISO).
+  - Pastikan termokopel terpasang dengan benar ke modul MAX6675.
